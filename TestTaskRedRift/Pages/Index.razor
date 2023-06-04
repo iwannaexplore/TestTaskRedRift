@@ -1,133 +1,92 @@
 ﻿@page "/"
 @using DAL.Entities
 @using System.Text.RegularExpressions
-@using Blazorise
-@using Newtonsoft.Json
-@using TestTaskRedRift.DTO
+@using BLL.Interfaces
+@using BLL.Services
+@inject IJSRuntime JS
+@inject ITextService TextService
 @using Match = System.Text.RegularExpressions.Match
 
 <PageTitle>Text Editor</PageTitle>
 
 <h3>Write your novel here</h3>
-<RichTextEdit @ref="        richTextEditRef"
-              ConfigureQuillJsMethod="myComponent.configureQuillJs"
-              Theme="RichTextEditTheme.Snow"
-              ContentChanged="@OnContentChanged"
-              PlaceHolder="Type your post here..."
-              ReadOnly="@readOnly"
-              SubmitOnEnter="false"
-              EnterPressed="@OnSave"
-              ToolbarPosition="Placement.Top">
-  <Toolbar>
-    <RichTextEditToolbarGroup>
-      <RichTextEditToolbarButton Action="RichTextEditAction.Bold"/>
-      <RichTextEditToolbarButton Action="RichTextEditAction.Italic"/>
-      <RichTextEditToolbarButton Action="RichTextEditAction.Link"/>
-      <RichTextEditToolbarSelect Action="RichTextEditAction.Size">
-        <RichTextEditToolbarSelectItem Value="small"/>
-        <RichTextEditToolbarSelectItem Selected/>
-        <RichTextEditToolbarSelectItem Value="large"/>
-        <RichTextEditToolbarSelectItem Value="huge">Very Big</RichTextEditToolbarSelectItem>
-      </RichTextEditToolbarSelect>
-    </RichTextEditToolbarGroup>
-    <RichTextEditToolbarGroup Float="Float.End">
-      <Button onClick="window.open('https://www.quilljs.com/','quilljs')">
-        <Icon Name="IconName.InfoCircle"/>
-      </Button>
-      <Button Clicked="@OnSave">
-        <Icon Name="IconName.Save"/>
-      </Button>
-    </RichTextEditToolbarGroup>
-  </Toolbar>
-  <Editor>My example content</Editor>
-</RichTextEdit>
+<div contenteditable="true" id="editor" style="border: 1px solid #ccc; padding: 10px; min-height: 200px;">
+  @* fix for contenteditable. We have to add br to make first line wrapped with <div> tag *@
+  @((MarkupString)InitialUserTextContent)
+  
+  <div>
+    <br>
+  </div>
+</div>
 
 
 <div class="col-auto mt-3">
   <button type="submit" class="btn btn-primary mb-3">Save</button>
 </div>
+@if (DialogIsOpen)
+{
+  <ModalWindow OnClose="@((args) => OnDialogClose(args.Item1, args.Item2, args.Item3))" Name=@CharacterName></ModalWindow>
+}
 
 @code {
-  private string SpecialText = "";
-  protected RichTextEdit richTextEditRef;
-  protected bool readOnly;
-  private string _contentAsHtml;
-  private dynamic _contentAsDelta;
-  private string previousValue;
-  private string _contentAsText;
-  List<Character> _characters;
-
-  [JSInvokable]
-  public static async Task OpenModalWindow()
+  private static Func<string, Task> OpenModalWindowAction;
+  private static Func<string, Task> SaveUserTextAction;
+  private bool DialogIsOpen = false;
+  private string CharacterName = "";
+  private string InitialUserTextContent = "";
+  private async Task OnDialogClose(string oldNames, string newName, bool isSaved)
   {
-    Console.WriteLine("Modal window");
-  }
-  public async Task OnContentChanged()
-  {
-    _contentAsHtml = await richTextEditRef.GetHtmlAsync();
-    _contentAsDelta = await richTextEditRef.GetDeltaAsync();
-    Delta content = JsonConvert.DeserializeObject<Delta>(_contentAsDelta);
-  //json deserialize
-
-    // await Task.Delay(2000);
-    if (previousValue == _contentAsHtml)
+    if (isSaved)
     {
-      return;
+      await JS.InvokeVoidAsync("ReplaceOldNameWithNewOne", oldNames, newName);
     }
-    previousValue = _contentAsHtml;
-    _contentAsText = await richTextEditRef.GetTextAsync();
-    HighlightCharacters(content);
-    await richTextEditRef.SetDeltaAsync(JsonConvert.SerializeObject(content));
-    await richTextEditRef.SetTextAsync("asdasdasdasd asdas dasd asd asd asd as das das d");
+    DialogIsOpen = false;
+  }
+  protected override void OnInitialized()
+  {
+    base.OnInitialized();
+    OpenModalWindowAction = OpenModalWindowAsync;
+    SaveUserTextAction = SaveUserTextAsync;
+  }
+  protected override async Task OnInitializedAsync()
+  {
+    InitialUserTextContent = (await TextService.GetLatestText()).Text;
+    await base.OnInitializedAsync();
+  }
+  protected override async Task OnAfterRenderAsync(bool firstRender)
+  {
+    await JS.InvokeVoidAsync("InitializeEditor");
+    await base.OnAfterRenderAsync(firstRender);
   }
 
-  public async Task OnSave()
+  public async Task OpenModalWindowAsync(string character)
   {
+    Console.WriteLine("Modal window: " + character);
+    DialogIsOpen = true;
+    CharacterName = character;
+    StateHasChanged();
   }
-
-  private void HighlightCharacters(Delta content)
+  public async Task SaveUserTextAsync(string userTextContent)
   {
-    foreach (var element in content.Content)
+    Console.WriteLine(userTextContent);
+    await TextService.SaveUserText(new UserText()
     {
-      var bold = false;
-      if (element.Insert.Count(e => e == ':') == 1 && element.Insert.Last() == ':')
-      {
-        bold = true;
-      }
-      else
-      {
-        bold = false;
-      }
-      if (element.Settings != null)
-      {
-        element.Settings.Bold = bold;
-      }
-    }
-  }
-  private void HighlightCharacter(Character character)
-  {
-    _contentAsHtml = _contentAsHtml.Replace(character.Name, $"<span style=\"background-color:red\">{character.Name}</span>");
-  }
-  private void FindCharactersNew()
-  {
-
-  }
-  private void FindCharacters()
-  {
-    var regex = new Regex(@"(^|\n)([^\n:]+):");
-    var matches = regex.Matches(_contentAsText);
-    _characters = new List<Character>();
-    foreach (Match match in matches)
-    {
-      var character = new Character();
-      character.Name = match.Groups[2].Value;
-      _characters.Add(character);
-    }
-    _characters = _characters.Distinct().ToList();
+      Text = userTextContent
+    });
   }
   private void Save()
   {
   //ToDo Add save here
     Console.WriteLine("Save");
+  }
+  [JSInvokable]
+  public static async Task OpenModalWindow(string character)
+  {
+    await OpenModalWindowAction(character);
+  }
+  [JSInvokable]
+  public static async Task SaveUserText(string userTextContent)
+  {
+    await SaveUserTextAction(userTextContent);
   }
 }

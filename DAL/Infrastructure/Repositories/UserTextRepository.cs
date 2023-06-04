@@ -14,11 +14,11 @@ public class UserTextRepository : IUserTextRepository
  }
  public async Task<IEnumerable<UserText>> GetAllAsync()
  {
-  return await _context.UserTexts.Include(c => c.Characters).ToListAsync();
+  return await _context.UserTexts.ToListAsync();
  }
  public async Task<UserText?> GetAsync(int id)
  {
-  return await _context.UserTexts.Include(c => c.Characters).FirstOrDefaultAsync(c => c.Id == id);
+  return await _context.UserTexts.FirstOrDefaultAsync(c => c.Id == id);
  }
  public async Task CreateAsync(UserText item)
  {

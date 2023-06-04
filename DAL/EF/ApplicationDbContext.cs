@@ -8,8 +8,7 @@ public sealed class ApplicationDbContext:DbContext
 {
   public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
   {
-    // Database.EnsureCreated();
+    Database.EnsureCreated();
   }
-  public DbSet<Character> Characters { get; set; }
   public DbSet<UserText> UserTexts { get; set; }
 }

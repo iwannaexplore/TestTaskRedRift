@@ -19,10 +19,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Blazorise.Bootstrap5" Version="1.2.3" />
-      <PackageReference Include="Blazorise.Icons.FontAwesome" Version="1.2.3" />
-      <PackageReference Include="Blazorise.Licensing" Version="1.1.0" />
-      <PackageReference Include="Blazorise.RichTextEdit" Version="1.2.3" />
       <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.5">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
