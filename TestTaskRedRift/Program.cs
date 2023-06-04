@@ -1,14 +1,34 @@
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
+using Blazorise;
+using Blazorise.Bootstrap5;
+using Blazorise.Icons.FontAwesome;
+using Blazorise.RichTextEdit;
+
+using DAL.EF;
+using DAL.Infrastructure;
+using DAL.Infrastructure.Repositories;
+
+using Microsoft.EntityFrameworkCore;
 
 using TestTaskRedRift.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+
+builder.Services.AddBlazorise(options =>
+{
+ // options.LicenseKey = "29F0-CC1C-91F8-4C06-8CC6-B899-905D";
+}).AddBootstrap5Providers().AddFontAwesomeIcons().AddBlazoriseRichTextEdit();
+
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<WeatherForecastService>();
+builder.Services.AddDbContext<ApplicationDbContext>((o) =>
+{
+ o.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"), x => x.MigrationsAssembly("DAL"));
+});
+
+builder.Services.AddScoped<ICharacterRepository, CharacterRepository>();
+builder.Services.AddScoped<IUserTextRepository, UserTextRepository>();
 
 var app = builder.Build();
 

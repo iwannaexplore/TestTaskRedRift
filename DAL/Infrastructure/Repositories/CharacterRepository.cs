@@ -1,28 +1,41 @@
+using DAL.EF;
 using DAL.Entities;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace DAL.Infrastructure.Repositories;
 
-public class CharacterRepository:IRepository<Character>
+public class CharacterRepository : ICharacterRepository
 {
 
- public IEnumerable<Character> GetAll()
+ private readonly ApplicationDbContext _context;
+ public CharacterRepository(ApplicationDbContext context)
  {
-  throw new NotImplementedException();
+  _context = context;
  }
- public Character Get(int id)
+ public async Task<IEnumerable<Character>> GetAllAsync()
  {
-  throw new NotImplementedException();
+  return await _context.Characters.Include(c => c.UserText).ToListAsync();
+
  }
- public void Create(Character item)
+ public async Task<Character?> GetAsync(int id)
  {
-  throw new NotImplementedException();
+  return await _context.Characters.Include(c => c.UserText).FirstOrDefaultAsync(c => c.Id == id);
+ }
+ public async Task CreateAsync(Character item)
+ {
+  await _context.Characters.AddAsync(item);
  }
  public void Update(Character item)
  {
-  throw new NotImplementedException();
+  _context.Characters.Update(item);
  }
- public void Delete(int id)
+ public void Delete(Character item)
  {
-  throw new NotImplementedException();
+  _context.Characters.Remove(item);
+ }
+ public async Task SaveChangesAsync()
+ {
+  await _context.SaveChangesAsync();
  }
 }
