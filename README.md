@@ -38,3 +38,11 @@ Note: The applicant should demonstrate their ability to design and implement a f
 3. Start terminal in opened folder
 4. Write ```docker compose up``` command
 5. Open localhost:2023
+# Difficulties
+1. The very first difficulty was choosing the right tool. I once came across an editable block when googling solutions, but somehow didn't pay attention to the contenteditable tag, which wasted my time on BlazoredRichText. That's because I was in a hurry, I don't know why,  because I had plenty of time.
+2. The "editable div" does not wrap the very first entry inside and I had to use a workaround in the form of div>br at the very beginning of block.
+3. The original idea was to somehow parse the line on the server  and search for  "characters" there and store them somehow in a database and so on. But I soon realized that this approach complicates things too much and javascript is much better for such a task due to its work with DOM (I could do it in C# too, but I didn't want to use third-party libraries).
+4. Two save requests breaks the database, got around this by setting a timer to send the request so that it spams no more than once every 2 seconds.
+# What to improve
+1. Two save requests breaks the database (in theory it could be bypassed with a factory, but I didn't want to overcomplicate the code)
+2. Add authentication (the ability to create a user was not specified in the job, so all "users" use the same text)
