@@ -1,0 +1,32 @@
+version: '3.4'
+
+networks:
+  mynetwork:
+    driver: bridge
+
+services:
+  app_postgres:
+    container_name: app_postgres
+    image: 'postgres:latest'
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_USER=redrift
+      - POSTGRES_PASSWORD=2023
+      - POSTGRES_DB=RedRiftTest
+    networks:
+      - mynetwork
+  #специально не добавлял volumes, чтобы не засорять компьютер
+  app_server:
+    container_name: app_server
+    ports:
+      - "2023:80"
+    build:
+      dockerfile: Dockerfile
+      context: .
+    networks:
+      - mynetwork
+    depends_on:
+      - "app_postgres"
+  #специально не добавлял переменные окружения, пусть будет докер для паблик версии, а для дев версии просто машина
+
