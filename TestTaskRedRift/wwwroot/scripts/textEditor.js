@@ -53,7 +53,7 @@ function inputHandlerEvent() {
     clearTimeout(timerToSaveChanges);
   timerToSaveChanges = setTimeout(() => {
     saveUserText();
-  }, 1000)
+  }, 2000)
 }
 
 
