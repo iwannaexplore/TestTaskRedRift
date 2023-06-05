@@ -2,11 +2,12 @@ using BLL.Interfaces;
 
 using DAL.Entities;
 using DAL.Infrastructure;
+using DAL.Infrastructure.Interfaces;
 using DAL.Infrastructure.Repositories;
 
 namespace BLL.Services;
 
-public class TextService:ITextService
+public class TextService : ITextService
 {
  public TextService(IUserTextRepository userTextRepository)
  {
@@ -16,30 +17,47 @@ public class TextService:ITextService
 
  public async Task SaveUserText(UserText userText)
  {
-  var allTexts = await UserTextRepository.GetAllAsync();
-  var oldUserText = allTexts.FirstOrDefault();
-  if (oldUserText == null)
+  try
   {
-   await UserTextRepository.CreateAsync(userText);
+   var allTexts = await UserTextRepository.GetAllAsync();
+   var oldUserText = allTexts.FirstOrDefault();
+   if (oldUserText == null)
+   {
+    await UserTextRepository.CreateAsync(userText);
+   }
+   else
+   {
+    oldUserText.Text = userText.Text;
+    UserTextRepository.Update(oldUserText);
+   }
+   await UserTextRepository.SaveChangesAsync();
   }
-  else
+  catch (Exception e)
   {
-   oldUserText.Text = userText.Text;
-   UserTextRepository.Update(oldUserText);
+   Console.WriteLine(e);
+   throw;
   }
-  await UserTextRepository.SaveChangesAsync();
  }
  public async Task<UserText> GetLatestText()
  {
-  var allTexts = await UserTextRepository.GetAllAsync();
-  var lastUserText = allTexts.FirstOrDefault();
-  if (lastUserText == null)
+  try
   {
-   return new UserText();
+   var allTexts = await UserTextRepository.GetAllAsync();
+   var lastUserText = allTexts.FirstOrDefault();
+   if (lastUserText == null)
+   {
+    return new UserText();
+   }
+   else
+   {
+    return lastUserText;
+   }
   }
-  else
+  catch (Exception e)
   {
-   return lastUserText;
+   Console.WriteLine(e);
+   throw;
   }
+
  }
 }

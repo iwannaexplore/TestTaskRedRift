@@ -1,4 +1,4 @@
-namespace DAL.Infrastructure;
+namespace DAL.Infrastructure.Interfaces;
 
 public interface IRepository<T> where T: class
 {

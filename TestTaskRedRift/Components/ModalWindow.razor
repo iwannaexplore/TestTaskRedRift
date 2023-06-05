@@ -1,0 +1,46 @@
+<div class="modal fade show" id="myModal" style="display:block; background-color: rgba(10,10,10,.8);" aria-modal="true" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Character</h4>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="@Cancel"></button>
+      </div>
+      <div class="modal-body">
+        <p>What name do you want to use?</p>
+        <input type="text" class="form-control" placeholder="Name" @bind="@Name"/>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger"
+                @onclick="@Cancel">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-success"
+                @onclick=@Ok>
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+@code {
+  private string oldName;
+
+  [Parameter]
+  public string Name { get; set; }
+  [Parameter]
+  public EventCallback<(string,string,bool)> OnClose { get; set; }
+  protected override void OnInitialized()
+  {
+    base.OnInitialized();
+    oldName = Name;
+  }
+  private Task Ok()
+  {
+    return OnClose.InvokeAsync((oldName, Name, true));
+  }
+  private Task Cancel()
+  {
+    return OnClose.InvokeAsync((oldName, Name, false));
+  }
+}

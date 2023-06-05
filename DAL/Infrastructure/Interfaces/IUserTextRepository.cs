@@ -1,6 +1,6 @@
 using DAL.Entities;
 
-namespace DAL.Infrastructure;
+namespace DAL.Infrastructure.Interfaces;
 
 public interface IUserTextRepository : IRepository<UserText>
 {

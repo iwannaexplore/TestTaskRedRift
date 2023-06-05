@@ -1,27 +1,17 @@
 ﻿@page "/"
 @using DAL.Entities
-@using System.Text.RegularExpressions
 @using BLL.Interfaces
-@using BLL.Services
 @inject IJSRuntime JS
 @inject ITextService TextService
-@using Match = System.Text.RegularExpressions.Match
 
 <PageTitle>Text Editor</PageTitle>
 
 <h3>Write your novel here</h3>
-<div contenteditable="true" id="editor" style="border: 1px solid #ccc; padding: 10px; min-height: 200px;">
-  @* fix for contenteditable. We have to add br to make first line wrapped with <div> tag *@
-  @((MarkupString)InitialUserTextContent)
-  
-  <div>
-    <br>
-  </div>
-</div>
+<div contenteditable="true" id="editor" style="border: 1px solid #ccc; padding: 10px; min-height: 200px;"></div>
 
 
 <div class="col-auto mt-3">
-  <button type="submit" class="btn btn-primary mb-3">Save</button>
+  <button id="saveButton" type="button" class="btn btn-primary mb-3">Save</button>
 </div>
 @if (DialogIsOpen)
 {
@@ -29,19 +19,39 @@
 }
 
 @code {
+  #region Delegates
+
   private static Func<string, Task> OpenModalWindowAction;
   private static Func<string, Task> SaveUserTextAction;
+
+  #endregion
+  #region ModalWindow
+
   private bool DialogIsOpen = false;
   private string CharacterName = "";
+
+  #endregion
+  #region Properties
+
   private string InitialUserTextContent = "";
-  private async Task OnDialogClose(string oldNames, string newName, bool isSaved)
+
+  #endregion
+  #region JsInvokable
+
+  [JSInvokable]
+  public static async Task OpenModalWindow(string character)
   {
-    if (isSaved)
-    {
-      await JS.InvokeVoidAsync("ReplaceOldNameWithNewOne", oldNames, newName);
-    }
-    DialogIsOpen = false;
+    await OpenModalWindowAction(character);
   }
+  [JSInvokable]
+  public static async Task SaveUserText(string userTextContent)
+  {
+    await SaveUserTextAction(userTextContent);
+  }
+
+  #endregion
+  #region Overridden
+
   protected override void OnInitialized()
   {
     base.OnInitialized();
@@ -55,38 +65,37 @@
   }
   protected override async Task OnAfterRenderAsync(bool firstRender)
   {
-    await JS.InvokeVoidAsync("InitializeEditor");
+    if (firstRender)
+      await JS.InvokeVoidAsync("InitializeEditor", InitialUserTextContent);
+
     await base.OnAfterRenderAsync(firstRender);
   }
 
-  public async Task OpenModalWindowAsync(string character)
+  #endregion
+  #region JsToBlazorViaDelegates
+
+  private async Task OpenModalWindowAsync(string character)
   {
     Console.WriteLine("Modal window: " + character);
     DialogIsOpen = true;
     CharacterName = character;
     StateHasChanged();
   }
-  public async Task SaveUserTextAsync(string userTextContent)
+  private async Task SaveUserTextAsync(string userTextContent)
   {
-    Console.WriteLine(userTextContent);
     await TextService.SaveUserText(new UserText()
     {
       Text = userTextContent
     });
   }
-  private void Save()
+
+  #endregion
+  private async Task OnDialogClose(string oldNames, string newName, bool isSaved)
   {
-  //ToDo Add save here
-    Console.WriteLine("Save");
-  }
-  [JSInvokable]
-  public static async Task OpenModalWindow(string character)
-  {
-    await OpenModalWindowAction(character);
-  }
-  [JSInvokable]
-  public static async Task SaveUserText(string userTextContent)
-  {
-    await SaveUserTextAction(userTextContent);
+    if (isSaved)
+    {
+      await JS.InvokeVoidAsync("ReplaceOldNameWithNewOne", oldNames, newName);
+    }
+    DialogIsOpen = false;
   }
 }

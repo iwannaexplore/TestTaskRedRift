@@ -1,5 +1,4 @@
 //InitialMethod
-//soft colors for white background
 let colors = [
   "rgb(26,89,136)",
   "rgb(133,84,119)",
@@ -16,138 +15,134 @@ let colors = [
 let charactersDictionary = {};
 let timerToSaveChanges;
 
-//External calls to server Start
-function InitializeEditor() {
+//External Invokes from server Start
+function InitializeEditor(htmlContent) {
   window.redRift_textEditor = document.querySelector("#editor");
-  if (!window.redRift_textEditor) setTimeout(InitializeEditor, 100);
-  readValuesFromExistingHtml();
-  let timerToSaveChanges;
-  redRift_textEditor.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" && e.shiftKey) {
-      e.preventDefault();
-    }
-  })
-  redRift_textEditor.addEventListener("input", InputHandlerEvent)
+  if (!window.redRift_textEditor) {
+    setTimeout(InitializeEditor, 100)
+    return;
+  }
+
+  redRift_textEditor.innerHTML = htmlContent
+  
+  redRift_textEditor.addEventListener("keydown", preventShiftPlusEnterKeyEventHandler)
+  redRift_textEditor.addEventListener("input", inputHandlerEvent)
+
+  document.querySelector("#saveButton").onclick = () => {
+    saveUserText();
+  };
+  readValuesFromHtmlAndFindCharacters();
 }
 
-function InputHandlerEvent() {
+function ReplaceOldNameWithNewOne(oldName, newName) {
+  let allLines = findAllCharacterLines();
+  for (let i = 0; i < allLines.length; i++) {
+    let lineMediator = new LineMediator(allLines[i]);
+    lineMediator.replaceOldNameWithNewOne(oldName, newName);
+  }
+  redRift_textEditor.dispatchEvent(new Event("input"));
+}
+
+//External Invokes from server End
+
+//Events Start
+function inputHandlerEvent() {
   changeContent.bind(this)(getTextFromEditor());
 
   if (timerToSaveChanges)
     clearTimeout(timerToSaveChanges);
   timerToSaveChanges = setTimeout(() => {
-    let userText = transformToDtoModel();
-    console.log("SaveChanges");
-    SaveUserTextCall(userText);
-  }, 3000)
+    saveUserText();
+  }, 1000)
 }
 
-function readValuesFromExistingHtml() {
-  let allLines = findAllLines();
-  for (let i = 0; i < allLines.length; i++) {
-    let line = allLines[i];
-    let lineTextContent = line.textContent.trim();
-    if (isCharUniqueAndLattestForTheWholeString(":", lineTextContent)) {
-      let color;
-      let character = lineTextContent.split(":")[0];
-      if (!charactersDictionary.hasOwnProperty(character)) {
-        color = line.style.color;
-        charactersDictionary[character] = color;
-      }
-      line.onclick = ((e) => OpenModalWindowCall(e.target.dataset.character.trim()));
-    }
+
+/**
+ * Doesn't let user press Shift+Enter, because SHift+Enter creates <span> inside <div>
+ *
+ * @param   e  input event.
+ */
+function preventShiftPlusEnterKeyEventHandler(e) {
+
+  if (e.key === "Enter" && e.shiftKey) {
+    e.preventDefault();
   }
 }
 
-function ReplaceOldNameWithNewOne(oldName, newName) {
-  let allLines = findAllLines();
-  for (let i = 0; i < allLines.length; i++) {
-    let line = allLines[i];
-    let lineTextContent = line.dataset.character;
-    if (lineTextContent !== oldName) {
-      continue;
-    }
-    if (newName.trim() !== "") {
-      line.innerHTML = newName + ":";
-      redRift_textEditor.dispatchEvent(new Event("input"));
-      if (charactersDictionary.hasOwnProperty(newName)) {
-        line.style.color = charactersDictionary[newName];
-      } else {
-        charactersDictionary[newName] = charactersDictionary[oldName];
-      }
-      line.dataset.character = newName;
-    } else{
-      line.remove();
-    }
-    delete charactersDictionary[oldName];
-  }
+//Events End
+
+function saveUserText() {
+  let userText = transformToDtoModel();
+  SaveUserTextCall(userText);
+  buttonAnimation();
 }
 
-//External calls to server End
+function buttonAnimation() {
+  let saveButton = document.querySelector("#saveButton");
+  saveButton.innerText = "Saving...";
+  saveButton.classList.add("disabled")
+  saveButton.disabled = true;
+  setTimeout(() => {
+    saveButton.innerText = "Saved";
+    saveButton.classList.add("btn-success");
+    saveButton.classList.remove("btn-primary");
+    saveButton.classList.remove("disabled")
+    saveButton.disabled = false;
+    setTimeout(() => {
+      saveButton.classList.remove("btn-success");
+      saveButton.classList.add("btn-primary");
+      saveButton.innerText = "Save";
+    }, 1000)
+  }, 2000);
+}
 
-function unpackSpanIfNeeded(divElement) {
+function readValuesFromHtmlAndFindCharacters() {
+  let allLines = findAllDivLines();
+  for (let i = 0; i < allLines.length; i++) {
+    let lineMediator = new LineMediator(allLines[i]);
+    if (lineMediator.isLineContainsCharacter()) {
+      lineMediator.updateCharacterLineUsingExistingValues()
+    }
+  }
 
+  fixForEditableDiv(false);
+}
+
+/**
+ * fix for contenteditable. We have to add br to make first line wrapped with <div> tag
+ *
+ * @param   e  input event.
+ */
+function fixForEditableDiv(isPost) {
+  redRift_textEditor.querySelectorAll(".line>br").forEach((el) => {
+    el.remove();
+  });
+  if (isPost) 
+    return;
+  
+  let fixDiv = document.createElement("div");
+  fixDiv.classList.add("line");
+  fixDiv.innerHTML = "<br>";
+  redRift_textEditor.appendChild(fixDiv);
 }
 
 function changeContent(content) {
-  let allLines = findAllLines();
+  let allLines = findAllDivLines();
   for (let i = 0; i < allLines.length; i++) {
-    let line = allLines[i];
-    let lineTextContent = line.textContent.trim();
-    if (isCharUniqueAndLattestForTheWholeString(":", lineTextContent)) {
-      let color;
-      let character = lineTextContent.split(":")[0];
-      if (!charactersDictionary.hasOwnProperty(character)) {
-        color = getColorByRandom();
-        charactersDictionary[character] = color;
-      } else {
-        color = charactersDictionary[character];
-      }
-      line.dataset.character = character;
-      line.style.fontWeight = "600";
-      line.style.color = color;
-      line.onclick = ((e) => OpenModalWindowCall(e.target.dataset.character.trim()));
+    let lineMediator = new LineMediator(allLines[i]);
+    if (lineMediator.isLineContainsCharacter()) {
+      lineMediator.createCharacterLine();
     } else {
-      if (line.innerText === "\n") {
-        delete line.dataset.character;
-        line.style.fontWeight = "400";
-        line.style.color = "";
-        line.onclick = undefined;
-      }
-      if (line.dataset.character) {
-        console.log("NONO")
-        let character = line.dataset.character;
-        if (document.querySelectorAll(`[data-character="${line.dataset.character}"]`).length <= 1) {
-          if (charactersDictionary.hasOwnProperty(character)) {
-            delete charactersDictionary[character];
-          }
-        }
-        delete line.dataset.character;
-        line.style.fontWeight = "400";
-        line.style.color = "";
-        line.onclick = undefined;
-      }
+      lineMediator.createRegularLine();
     }
   }
-  let allElementsWithDataCharacter = document.querySelectorAll("[data-character]");
-  for (const key in charactersDictionary) {
-    let isNeedToDeleteKey;
-    for (let i = 0; i < allElementsWithDataCharacter.length; i++) {
-      if (key !== allElementsWithDataCharacter[i].dataset.character) {
-        isNeedToDeleteKey = true;
-      } else {
-        isNeedToDeleteKey = false;
-        break;
-      }
-    }
-    if (isNeedToDeleteKey)
-      delete charactersDictionary[key];
-  }
-  console.log(charactersDictionary);
 }
 
+function findAllCharacterLines() {
+  return document.querySelectorAll("[data-character]")
+}
 
-function findAllLines() {
+function findAllDivLines() {
   return redRift_textEditor.querySelectorAll("div");
 }
 
@@ -160,12 +155,8 @@ function getTextFromEditor() {
   return redRift_textEditor.innerHTML;
 }
 
-function isCharUniqueAndLattestForTheWholeString(char, str) {
-  return str.length !== 0 && str.indexOf(char) === str.length - 1
-}
-
-
 function transformToDtoModel() {
+  fixForEditableDiv();
   return getTextFromEditor();
 }
 
