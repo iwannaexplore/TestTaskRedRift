@@ -32,3 +32,9 @@ Instructions for how to build and run the application.
 A short description of the approach taken to solve the task, including any trade-offs made and areas for improvement.
 
 Note: The applicant should demonstrate their ability to design and implement a full-stack application that meets the above requirements, and provide a solution that is easy to understand and maintain. The focus should be on delivering a working solution with clean and well-organized code, rather than on incorporating advanced features or technologies.
+# How to use it
+1. Clone repository
+2. Go to cloned folder
+3. Start terminal in opened folder
+4. Write ```docker compose up``` command
+5. Open localhost:2023
