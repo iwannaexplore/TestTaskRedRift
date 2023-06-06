@@ -12,7 +12,7 @@ class LineMediator {
   }
 
   createCharacterLine(color = undefined) {
-    if (charactersDictionary.hasOwnProperty(this._characterDataSet) && this._characterInnerText !== this._characterDataSet) {
+    if (this._characterInnerText !== this._characterDataSet && this._isCharacterTheLastAndNeedToBeDeleted(this._characterDataSet)) {
       delete charactersDictionary[this._characterDataSet];
     }
     if (!charactersDictionary.hasOwnProperty(this._characterInnerText)) {
@@ -87,6 +87,7 @@ class LineMediator {
     return document.querySelectorAll(`[data-character="${this._characterDataSet}"]`).length <= 1 &&
       charactersDictionary.hasOwnProperty(characterDatasetValue)
   }
+  
 
   _isCharUniqueAndAtTheEndOfString(char, str) {
     return str.length !== 0 && str.indexOf(char) === str.length - 1
